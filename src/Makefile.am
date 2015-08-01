@@ -4,4 +4,5 @@ teneo_CFLAGS = @TENEO_CFLAGS@ @SODIUM_CFLAGS@
 teneo_LDFLAGS = @SODIUM_LIBS@
 
 teneo_SOURCES = \
-	main.c
+	main.c \
+	readpassphrase.c
