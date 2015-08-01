@@ -5,11 +5,13 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <getopt.h>
 
 #include <sodium.h>
+
+#include "profile.h"
+#include "readpassphrase.h"
 
 static void usage(const char *program)
 {
@@ -24,19 +26,19 @@ static void usage(const char *program)
     fprintf(stderr, "  -p, --profile <profile>   Specify which profile to use\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  Available Profiles:\n");
-    fprintf(stderr, "      2015v1 (default)\n");
+    fprintf(stderr, "      2015v1\n");
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Output Format Options:\n");
-    fprintf(stderr, "  -s, --ssh                 Output OpenSSH public and private key\n");
-    fprintf(stderr, "  -g, --gpg                 Output GnuPG public and private key\n");
+    fprintf(stderr, "  -s, --openssh             Output OpenSSH public and private key\n");
+    fprintf(stderr, "  -g, --gnupg               Output GnuPG public and private key\n");
     fprintf(stderr, "\n");
 }
 
 static struct option options[] = {
     // Output Formats.
-    {"ssh", no_argument, NULL, 's'},
-    {"gpg", no_argument, NULL, 'g'},
+    {"openssh", no_argument, NULL, 's'},
+    {"gnupg", no_argument, NULL, 'g'},
 
     // Profile.
     {"profile", required_argument, NULL, 'p'},
@@ -44,16 +46,6 @@ static struct option options[] = {
     // Help.
     {"help", no_argument, NULL, 'h'}
 };
-
-static bool is_valid_profile_name(const char *name)
-{
-    if (name == NULL)
-    {
-        return false;
-    }
-
-    return strcmp(name, "2015v1") == 0;
-}
 
 int main(int argc, char *argv[])
 {
@@ -64,7 +56,7 @@ int main(int argc, char *argv[])
     bool gpg_output = false;
 
     // Profile options.
-    char *profile_name = "2015v1";
+    char *profile_name = DEFAULT_PROFILE;
 
     // Output directory.
     char *output_directory = "";

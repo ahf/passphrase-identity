@@ -5,4 +5,5 @@ teneo_LDFLAGS = @SODIUM_LIBS@
 
 teneo_SOURCES = \
 	main.c \
+	profile.c \
 	readpassphrase.c
