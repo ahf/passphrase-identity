@@ -11,4 +11,6 @@
 
 bool is_valid_profile_name(const char *profile_name);
 
+bool generate_keypair(const char *profile_name, const char *username, size_t username_length, const char *passphrase, size_t passphrase_length, unsigned char *secret, unsigned char *public);
+
 #endif

@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <getopt.h>
 
@@ -22,7 +23,8 @@ static void usage(const char *program)
     fprintf(stderr, "  -h, --help                Show help options\n");
     fprintf(stderr, "\n");
 
-    fprintf(stderr, "Profile Options:\n");
+    fprintf(stderr, "Key Options:\n");
+    fprintf(stderr, "  -u, --user <username>     Specify which username to use\n");
     fprintf(stderr, "  -p, --profile <profile>   Specify which profile to use\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  Available Profiles:\n");
@@ -40,8 +42,9 @@ static struct option options[] = {
     {"openssh", no_argument, NULL, 's'},
     {"gnupg", no_argument, NULL, 'g'},
 
-    // Profile.
+    // Key Options.
     {"profile", required_argument, NULL, 'p'},
+    {"user", required_argument, NULL, 'u'},
 
     // Help.
     {"help", no_argument, NULL, 'h'}
@@ -50,18 +53,25 @@ static struct option options[] = {
 int main(int argc, char *argv[])
 {
     char option;
+    bool success = true;
 
     // Output formats.
     bool ssh_output = false;
     bool gpg_output = false;
 
-    // Profile options.
+    // Key options.
     char *profile_name = DEFAULT_PROFILE;
+
+    char *username = NULL;
+    size_t username_length = 0;
 
     // Output directory.
     char *output_directory = "";
 
-    while ((option = getopt_long(argc, argv, "sghp:", options, NULL)) != -1)
+    // Passphrase.
+    char passphrase[1024];
+
+    while ((option = getopt_long(argc, argv, "sghu:p:", options, NULL)) != -1)
     {
         switch (option)
         {
@@ -77,6 +87,11 @@ int main(int argc, char *argv[])
                 profile_name = optarg;
                 break;
 
+            case 'u':
+                username = optarg;
+                username_length = strlen(username);
+                break;
+
             default:
                 usage(argv[0]);
                 return EXIT_FAILURE;
@@ -86,6 +101,13 @@ int main(int argc, char *argv[])
     if (argv[optind] != NULL)
     {
         output_directory = argv[optind];
+    }
+
+    // Username is required.
+    if (username == NULL)
+    {
+        fprintf(stderr, "Error: Missing username option ...\n");
+        return EXIT_FAILURE;
     }
 
     // We want at least one output format.
@@ -107,7 +129,40 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    printf("Generating ed25519 key using the profile '%s' ...\n", profile_name);
+    sodium_mlock(passphrase, sizeof(passphrase));
 
-    return EXIT_SUCCESS;
+    if (readpassphrase("Passphrase: ", passphrase, sizeof(passphrase), RPP_ECHO_OFF) != NULL)
+    {
+        unsigned char public[crypto_sign_PUBLICKEYBYTES];
+        unsigned char secret[crypto_sign_SECRETKEYBYTES];
+
+        sodium_mlock(public, sizeof(public));
+        sodium_mlock(secret, sizeof(secret));
+        sodium_mlock(username, username_length);
+
+        // Avoid randomness here.
+        sodium_memzero(public, sizeof(public));
+        sodium_memzero(secret, sizeof(secret));
+
+        printf("Trying to generate ed25519 key pair, this may take a little while ...\n");
+
+        if (! generate_keypair(profile_name, username, username_length, passphrase, strlen(passphrase), secret, public))
+        {
+            fprintf(stderr, "Error: Unable to generate ed25519 key pair ...\n");
+            success = false;
+        }
+        else
+        {
+            printf("Succesfully generated ed25519 key pair using the '%s' profile ...\n", profile_name);
+        }
+
+        // Zeros out the buffers as well.
+        sodium_munlock(public, sizeof(public));
+        sodium_munlock(secret, sizeof(secret));
+        sodium_munlock(username, username_length);
+    }
+
+    sodium_munlock(passphrase, sizeof(passphrase));
+
+    return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
