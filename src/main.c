@@ -8,6 +8,8 @@
 
 #include <getopt.h>
 
+#include <sodium.h>
+
 static void usage(const char *program)
 {
     fprintf(stderr, "Usage: %s [ options ] <output directory>\n", program);
@@ -73,6 +75,12 @@ int main(int argc, char *argv[])
     if (output_directory == NULL)
     {
         fprintf(stderr, "Error: Missing output directory ...\n");
+        return EXIT_FAILURE;
+    }
+
+    if (sodium_init() == -1)
+    {
+        fprintf(stderr, "Error: Unable to initialize libsodium ...\n");
         return EXIT_FAILURE;
     }
 
