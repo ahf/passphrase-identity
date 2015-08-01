@@ -11,6 +11,7 @@
 
 #include <sodium.h>
 
+#include "base64.h"
 #include "profile.h"
 #include "readpassphrase.h"
 
@@ -70,6 +71,9 @@ int main(int argc, char *argv[])
 
     // Passphrase.
     char passphrase[1024];
+
+    // Initialize base64 encoder and decoder.
+    base64_init();
 
     while ((option = getopt_long(argc, argv, "sghu:p:", options, NULL)) != -1)
     {
