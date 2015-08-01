@@ -13,7 +13,7 @@
 
 static void usage(const char *program)
 {
-    fprintf(stderr, "Usage: %s [ options ] <output directory>\n", program);
+    fprintf(stderr, "Usage: %s [ options ] [ output directory ]\n", program);
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Help Options:\n");
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     char *profile_name = "2015v1";
 
     // Output directory.
-    char *output_directory = NULL;
+    char *output_directory = "";
 
     while ((option = getopt_long(argc, argv, "sghp:", options, NULL)) != -1)
     {
@@ -91,18 +91,15 @@ int main(int argc, char *argv[])
         };
     }
 
-    output_directory = argv[optind];
+    if (argv[optind] != NULL)
+    {
+        output_directory = argv[optind];
+    }
 
     // We want at least one output format.
     if (! (ssh_output || gpg_output))
     {
         fprintf(stderr, "Error: Missing output format(s) ...\n");
-        return EXIT_FAILURE;
-    }
-
-    if (output_directory == NULL)
-    {
-        fprintf(stderr, "Error: Missing output directory ...\n");
         return EXIT_FAILURE;
     }
 
