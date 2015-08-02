@@ -2,6 +2,31 @@
 
 Regenerable ed25519 keys for OpenSSH and other.
 
+Teneo allows you to deterministically generate an ed25519 key pair for OpenSSH.
+This allows you to (re)create your key pair on a computer which lacks
+persistent storage. You must be able to remember three things to generate a
+key: a user defined "username", a Teneo defined "profile" and your passphrase.
+
+## Example Usage
+
+    $ ./teneo --user ahf@teneo.0x90.dk --openssh
+    Passphrase: foobar
+    Generating key pair using the '2015v1' profile ...
+    This may take a little while ...
+    Succesfully generated key pair ...
+    Saving OpenSSH secret key to id_ed25519 ...
+    Saving OpenSSH public key to id_ed25519.pub ...
+    $ cat id_ed25519
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+    QyNTUxOQAAACArYR91DYHLCeYb+Ls3wyYsSJrADs7topOSlioZ6GNX2AAAAJgtPOl+LTzp
+    fgAAAAtzc2gtZWQyNTUxOQAAACArYR91DYHLCeYb+Ls3wyYsSJrADs7topOSlioZ6GNX2A
+    AAAEAv/A/ak2U1vqbQR7sDFmJFp1eC7kv0HdZYm4Dt50n33ythH3UNgcsJ5hv4uzfDJixI
+    msAOzu2ik5KWKhnoY1fYAAAAEWFoZkB0ZW5lby4weDkwLmRrAQIDBA==
+    -----END OPENSSH PRIVATE KEY-----
+    $ cat id_ed25519.pub
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICthH3UNgcsJ5hv4uzfDJixImsAOzu2ik5KWKhnoY1fY ahf@teneo.0x90.dk
+
 ## Authors
 
 - [Alexander Færøy](https://twitter.com/ahfaeroey) ([ahf@0x90.dk](mailto:ahf@0x90.dk)).
