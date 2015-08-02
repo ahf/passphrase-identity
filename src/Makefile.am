@@ -4,7 +4,10 @@ teneo_CFLAGS = @TENEO_CFLAGS@ @SODIUM_CFLAGS@
 teneo_LDFLAGS = @SODIUM_LIBS@
 
 teneo_SOURCES = \
-	base64.c \
+	buffer.c \
+	buffer_writer.c \
 	main.c \
+	memory.c \
+	openssh.c \
 	profile.c \
 	readpassphrase.c

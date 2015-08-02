@@ -11,7 +11,8 @@
 
 #include <sodium.h>
 
-#include "base64.h"
+#include "buffer.h"
+#include "openssh.h"
 #include "profile.h"
 #include "readpassphrase.h"
 
@@ -34,14 +35,12 @@ static void usage(const char *program)
 
     fprintf(stderr, "Output Format Options:\n");
     fprintf(stderr, "  -s, --openssh             Output OpenSSH public and private key\n");
-    fprintf(stderr, "  -g, --gnupg               Output GnuPG public and private key\n");
     fprintf(stderr, "\n");
 }
 
 static struct option options[] = {
     // Output Formats.
     {"openssh", no_argument, NULL, 's'},
-    {"gnupg", no_argument, NULL, 'g'},
 
     // Key Options.
     {"profile", required_argument, NULL, 'p'},
@@ -73,9 +72,9 @@ int main(int argc, char *argv[])
     char passphrase[1024];
 
     // Initialize base64 encoder and decoder.
-    base64_init();
+    buffer_init();
 
-    while ((option = getopt_long(argc, argv, "sghu:p:", options, NULL)) != -1)
+    while ((option = getopt_long(argc, argv, "shu:p:", options, NULL)) != -1)
     {
         switch (option)
         {
@@ -148,16 +147,22 @@ int main(int argc, char *argv[])
         sodium_memzero(public, sizeof(public));
         sodium_memzero(secret, sizeof(secret));
 
-        printf("Trying to generate ed25519 key pair, this may take a little while ...\n");
+        printf("Generating key pair using the '%s' profile ...\n", profile_name);
+        printf("This may take a little while ...\n");
 
-        if (! generate_keypair(profile_name, username, username_length, passphrase, strlen(passphrase), secret, public))
+        if (generate_keypair(profile_name, username, username_length, passphrase, strlen(passphrase), secret, public))
         {
-            fprintf(stderr, "Error: Unable to generate ed25519 key pair ...\n");
-            success = false;
+            printf("Succesfully generated key pair ...\n");
+
+            if (ssh_output)
+            {
+                openssh_write(output_directory, username, username_length, secret, public);
+            }
         }
         else
         {
-            printf("Succesfully generated ed25519 key pair using the '%s' profile ...\n", profile_name);
+            fprintf(stderr, "Error: Unable to generate key pair ...\n");
+            success = false;
         }
 
         // Zeros out the buffers as well.
