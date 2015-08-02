@@ -28,46 +28,46 @@ key: a user defined "username", a Teneo defined "profile" and your passphrase.
 
 1. We start by creating a key pair for OpenSSH using "ahf@teneo.0x90.dk@ as username.
 
-    $ ./teneo --openssh --user ahf@teneo.0x90.dk
-    Passphrase: foobar
-    Generating key pair using the '2015v1' profile ...
-    This may take a little while ...
-    Succesfully generated key pair ...
-    Saving OpenSSH secret key to id_ed25519 ...
-    Saving OpenSSH public key to id_ed25519.pub ...
+        $ ./teneo --openssh --user ahf@teneo.0x90.dk
+        Passphrase: foobar
+        Generating key pair using the '2015v1' profile ...
+        This may take a little while ...
+        Succesfully generated key pair ...
+        Saving OpenSSH secret key to id_ed25519 ...
+        Saving OpenSSH public key to id_ed25519.pub ...
 
-    $ cat id_ed25519
-    -----BEGIN OPENSSH PRIVATE KEY-----
-    b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-    QyNTUxOQAAACArYR91DYHLCeYb+Ls3wyYsSJrADs7topOSlioZ6GNX2AAAAJj36teu9+rX
-    rgAAAAtzc2gtZWQyNTUxOQAAACArYR91DYHLCeYb+Ls3wyYsSJrADs7topOSlioZ6GNX2A
-    AAAEAv/A/ak2U1vqbQR7sDFmJFp1eC7kv0HdZYm4Dt50n33ythH3UNgcsJ5hv4uzfDJixI
-    msAOzu2ik5KWKhnoY1fYAAAAEWFoZkB0ZW5lby4weDkwLmRrAQIDBA==
-    -----END OPENSSH PRIVATE KEY-----
+        $ cat id_ed25519
+        -----BEGIN OPENSSH PRIVATE KEY-----
+        b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+        QyNTUxOQAAACArYR91DYHLCeYb+Ls3wyYsSJrADs7topOSlioZ6GNX2AAAAJj36teu9+rX
+        rgAAAAtzc2gtZWQyNTUxOQAAACArYR91DYHLCeYb+Ls3wyYsSJrADs7topOSlioZ6GNX2A
+        AAAEAv/A/ak2U1vqbQR7sDFmJFp1eC7kv0HdZYm4Dt50n33ythH3UNgcsJ5hv4uzfDJixI
+        msAOzu2ik5KWKhnoY1fYAAAAEWFoZkB0ZW5lby4weDkwLmRrAQIDBA==
+        -----END OPENSSH PRIVATE KEY-----
 
-    $ cat id_ed25519.pub
-    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICthH3UNgcsJ5hv4uzfDJixImsAOzu2ik5KWKhnoY1fY ahf@teneo.0x90.dk
+        $ cat id_ed25519.pub
+        ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICthH3UNgcsJ5hv4uzfDJixImsAOzu2ik5KWKhnoY1fY ahf@teneo.0x90.dk
 
-    $ openssl sha256 id_ed25519.pub
-    SHA256(id_ed25519.pub)= a394eb08102eefb020d3274285671d113604690bedb551c5dfbf27c0d6844482
+        $ openssl sha256 id_ed25519.pub
+        SHA256(id_ed25519.pub)= a394eb08102eefb020d3274285671d113604690bedb551c5dfbf27c0d6844482
 
 2. Wipe the key pair.
 
-    $ rm -rf id_ed25519
-    $ rm -rf id_ed25519.pub
+        $ rm -rf id_ed25519
+        $ rm -rf id_ed25519.pub
 
 3. Create the key again using the same parameters and passphrase.
 
-    $ ./teneo --openssh --user ahf@teneo.0x90.dk
-    Passphrase: foobar
-    Generating key pair using the '2015v1' profile ...
-    This may take a little while ...
-    Succesfully generated key pair ...
-    Saving OpenSSH secret key to id_ed25519 ...
-    Saving OpenSSH public key to id_ed25519.pub ...
+        $ ./teneo --openssh --user ahf@teneo.0x90.dk
+        Passphrase: foobar
+        Generating key pair using the '2015v1' profile ...
+        This may take a little while ...
+        Succesfully generated key pair ...
+        Saving OpenSSH secret key to id_ed25519 ...
+        Saving OpenSSH public key to id_ed25519.pub ...
 
-    $ openssl sha256 id_ed25519.pub
-    SHA256(id_ed25519.pub)= a394eb08102eefb020d3274285671d113604690bedb551c5dfbf27c0d6844482
+        $ openssl sha256 id_ed25519.pub
+        SHA256(id_ed25519.pub)= a394eb08102eefb020d3274285671d113604690bedb551c5dfbf27c0d6844482
 
 ## Authors
 
