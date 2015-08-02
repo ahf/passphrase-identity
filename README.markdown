@@ -2,10 +2,15 @@
 
 Regenerable ed25519 keys for OpenSSH.
 
-Teneo allows you to deterministically generate an ed25519 key pair for OpenSSH.
-This allows you to (re)create your key pair on a computer which lacks
-persistent storage. You must be able to remember three things to generate a
-key: a user defined "username", a Teneo defined "profile" and your passphrase.
+Teneo allows you to deterministically generate an ed25519 key pair for OpenSSH
+from a set of parameters. This allows you to (re)generate your key pair on a
+computer which, for example, lacks persistent storage.
+
+You must be able to remember three things to (re)generate your key pair;
+
+1. A user defined "username", which can be any string.
+2. A Teneo defined "profile" name. There's currently only one profile available: `2015v1`, which uses `scrypt()` + `salsa20/8` + `sha256` as KDF.
+3. Your personally selected passphrase.
 
 ## Usage
 
@@ -79,6 +84,9 @@ key: a user defined "username", a Teneo defined "profile" and your passphrase.
 2. GnuPG format support.
 3. Consider the new Tor ed25519 ID keys?
 4. Add proper tests. Use Travis CI to build on both OS X and Linux.
+5. Add fancy graphics after key generation, like the OpenSSH client, such that
+   the user can quickly identify if something is wrong. 
+6. Add cracklib support and remember to make it possible to disable it as well.
 
 ## License
 
