@@ -1,6 +1,6 @@
 # Teneo
 
-Regenerable ed25519 keys for OpenSSH and other.
+Regenerable ed25519 keys for OpenSSH.
 
 Teneo allows you to deterministically generate an ed25519 key pair for OpenSSH.
 This allows you to (re)create your key pair on a computer which lacks
