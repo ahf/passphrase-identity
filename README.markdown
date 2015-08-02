@@ -7,6 +7,23 @@ This allows you to (re)create your key pair on a computer which lacks
 persistent storage. You must be able to remember three things to generate a
 key: a user defined "username", a Teneo defined "profile" and your passphrase.
 
+## Usage
+
+    Usage: ./teneo [ options ] [ output directory ]
+
+    Help Options:
+      -h, --help                Show help options
+
+    Key Options:
+      -u, --user <username>     Specify which username to use
+      -p, --profile <profile>   Specify which profile to use
+
+      Available Profiles:
+          2015v1
+
+    Output Format Options:
+      -s, --openssh             Output OpenSSH public and private key
+
 ## Example Usage
 
     $ ./teneo --user ahf@teneo.0x90.dk --openssh
