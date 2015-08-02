@@ -1,1 +1,0 @@
-- [Alexander Færøy](mailto:ahf@0x90.dk).
