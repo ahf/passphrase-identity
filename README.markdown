@@ -31,7 +31,7 @@ You must be able to remember three things to (re)generate your key pair;
 
 ## Example Usage
 
-1. We start by creating a key pair for OpenSSH using "ahf@teneo.0x90.dk" as username.
+1. We start by creating a key pair for OpenSSH using `ahf@teneo.0x90.dk` as username.
 
         $ ./teneo --openssh --user ahf@teneo.0x90.dk
         Passphrase: foobar
