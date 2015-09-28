@@ -7,6 +7,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "buffer.h"
 #include "buffer_writer.h"
@@ -17,9 +18,16 @@
 static bool openssh_write_public(const char *output_directory, const char *username, size_t username_length, unsigned char *public)
 {
     // Public key file.
-    char *public_file_path = malloc(strlen(output_directory) + 14 + 1);
-    sprintf(public_file_path, "%sid_ed25519.pub", output_directory);
+    char *public_file_path = NULL;
     int fd = 0;
+
+    if (output_directory != NULL)
+    {
+        public_file_path = malloc(strlen(output_directory) + 16);
+        sprintf(public_file_path, "%s/id_ed25519.pub", output_directory);
+    }
+    else
+        public_file_path = strdup("id_ed25519.pub");
 
     printf("Saving OpenSSH public key to %s ...\n", public_file_path);
 
@@ -27,6 +35,7 @@ static bool openssh_write_public(const char *output_directory, const char *usern
 
     if (fd == -1)
     {
+        fprintf(stderr, "Error: Unable to write public key (%s)\n", strerror(errno));
         free(public_file_path);
         return false;
     }
@@ -61,9 +70,16 @@ static bool openssh_write_public(const char *output_directory, const char *usern
 
 static bool openssh_write_secret(const char *output_directory, const char *username, size_t username_length, unsigned char *public, unsigned char *secret)
 {
-    char *secret_file_path = malloc(strlen(output_directory) + 10 + 1);
-    sprintf(secret_file_path, "%sid_ed25519", output_directory);
+    char *secret_file_path = NULL;
     int fd = 0;
+
+    if (output_directory != NULL)
+    {
+        secret_file_path = malloc(strlen(output_directory) + 12);
+        sprintf(secret_file_path, "%s/id_ed25519", output_directory);
+    }
+    else
+        secret_file_path = strdup("id_ed25519");
 
     printf("Saving OpenSSH secret key to %s ...\n", secret_file_path);
 
@@ -71,6 +87,7 @@ static bool openssh_write_secret(const char *output_directory, const char *usern
 
     if (fd == -1)
     {
+        fprintf(stderr, "Error: Unable to write secret key (%s)\n", strerror(errno));
         free(secret_file_path);
         return false;
     }

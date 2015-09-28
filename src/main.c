@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     size_t username_length = 0;
 
     // Output directory.
-    char *output_directory = "";
+    char *output_directory = NULL;
 
     // Passphrase.
     char passphrase[1024];
