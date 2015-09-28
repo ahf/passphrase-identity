@@ -24,7 +24,7 @@ void buffer_writer_free(buffer_writer *buffer_writer);
 void buffer_writer_reset(buffer_writer *buffer_writer);
 void buffer_writer_set_offset(buffer_writer *buffer_writer, size_t offset);
 
-bool buffer_writer_write_value(buffer_writer *buffer_writer, void *value, size_t size);
+bool buffer_writer_write_value(buffer_writer *buffer_writer, const void *value, size_t size);
 
 bool buffer_writer_write_uint8(buffer_writer *buffer_writer, uint8_t value);
 bool buffer_writer_write_uint16(buffer_writer *buffer_writer, uint16_t value);

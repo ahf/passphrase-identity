@@ -42,7 +42,7 @@ void buffer_writer_set_offset(buffer_writer *buffer_writer, size_t offset)
     buffer_writer->write_offset = offset;
 }
 
-bool buffer_writer_write_value(buffer_writer *buffer_writer, void *value, size_t size)
+bool buffer_writer_write_value(buffer_writer *buffer_writer, const void *value, size_t size)
 {
     if (buffer_writer == NULL || buffer_writer->buffer == NULL || value == NULL || size == 0)
         return false;

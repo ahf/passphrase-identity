@@ -128,7 +128,7 @@ static bool openssh_write_secret(const char *output_directory, const char *usern
     buffer_writer_write_value(body_writer, secret, 64);
 
     buffer_writer_write_uint32(body_writer, username_length);
-    buffer_writer_write_value(body_writer, (char *)username, username_length);
+    buffer_writer_write_value(body_writer, username, username_length);
 
     uint8_t pad = 0;
     while (padding--)
