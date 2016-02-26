@@ -28,7 +28,7 @@ void buffer_init(void)
 {
     for (int i = 0; i < 64; ++i)
     {
-        base64_decoding_table[(unsigned char)base64_encoding_table[i]] = i;
+        base64_decoding_table[base64_encoding_table[i]] = i;
     }
 }
 
