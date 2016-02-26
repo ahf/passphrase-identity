@@ -22,7 +22,7 @@ GLIB_TESTS
 
 TENEO_CFLAGS=
 
-PREFERED_CFLAGS="-pedantic -Werror -Wall -W -Wextra -Wbad-function-cast -Wcast-align -Wcast-qual -Wfloat-equal -Wformat=2 -Wformat-security -Wformat-nonliteral -Winit-self -Winline -Wmissing-prototypes -Wmissing-declarations -Wmissing-format-attribute -Wmissing-noreturn -Wpointer-arith -Wredundant-decls -Wshadow -Wswitch-default -Wunused"
+PREFERED_CFLAGS="-pedantic -Werror -Wall -Wextra -Wbad-function-cast -Wcast-align -Wcast-qual -Wfloat-equal -Wformat=2 -Wformat-security -Wformat-nonliteral -Winit-self -Winline -Wmissing-prototypes -Wmissing-declarations -Wmissing-format-attribute -Wmissing-noreturn -Wpointer-arith -Wredundant-decls -Wshadow -Wswitch-default -Wunused"
 
 for flag in $PREFERED_CFLAGS; do
     AX_CHECK_COMPILER_FLAGS([$flag], [TENEO_CFLAGS="$TENEO_CFLAGS $flag"],)
