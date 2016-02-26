@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <arpa/inet.h> /* FIXME: configure: Might want netinet/in.h instead. */
 
 #include "buffer_writer.h"
 #include "memory.h"
