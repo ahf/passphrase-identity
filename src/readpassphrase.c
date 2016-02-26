@@ -186,6 +186,8 @@ restart:
 			case SIGTTIN:
 			case SIGTTOU:
 				need_restart = 1;
+                        default:
+                                ; /* Don't restart. */
 			}
 		}
 	}
