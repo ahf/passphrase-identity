@@ -9,7 +9,7 @@
 #include "buffer.h"
 #include "memory.h"
 
-static char base64_encoding_table[] = {
+static unsigned char base64_encoding_table[] = {
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
     'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
     'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
@@ -20,7 +20,7 @@ static char base64_encoding_table[] = {
     '4', '5', '6', '7', '8', '9', '+', '/'
 };
 
-static char base64_decoding_table[256];
+static unsigned char base64_decoding_table[256];
 
 static int base64_mod_table[] = { 0, 2, 1 };
 
@@ -28,7 +28,7 @@ void buffer_init(void)
 {
     for (int i = 0; i < 64; ++i)
     {
-        base64_decoding_table[(unsigned char)base64_encoding_table[i]] = i;
+        base64_decoding_table[base64_encoding_table[i]] = i;
     }
 }
 

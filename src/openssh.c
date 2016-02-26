@@ -61,7 +61,12 @@ static bool openssh_write_public(const char *output_directory, const char *usern
     buffer_free(body_base64);
     buffer_writer_free(body_writer);
 
-    close(fd);
+    if (close(fd))
+    {
+        fprintf(stderr, "Error: Unable to close public key file (%s)\n", strerror(errno));
+        free(public_file_path);
+        return false;
+    }
 
     free(public_file_path);
 
