@@ -23,8 +23,9 @@ static bool openssh_write_public(const char *output_directory, const char *usern
 
     if (output_directory != NULL)
     {
-        public_file_path = malloc(strlen(output_directory) + 16);
-        sprintf(public_file_path, "%s/id_ed25519.pub", output_directory);
+        size_t public_file_path_len = strlen(output_directory) + 16;
+        public_file_path = malloc(public_file_path_len);
+        snprintf(public_file_path, public_file_path_len, "%s/id_ed25519.pub", output_directory);
     }
     else
         public_file_path = strdup("id_ed25519.pub");
@@ -80,8 +81,9 @@ static bool openssh_write_secret(const char *output_directory, const char *usern
 
     if (output_directory != NULL)
     {
-        secret_file_path = malloc(strlen(output_directory) + 12);
-        sprintf(secret_file_path, "%s/id_ed25519", output_directory);
+        size_t secret_file_path_len = strlen(output_directory) + 12;
+        secret_file_path = malloc(secret_file_path_len);
+        snprintf(secret_file_path, secret_file_path_len, "%s/id_ed25519", output_directory);
     }
     else
         secret_file_path = strdup("id_ed25519");
