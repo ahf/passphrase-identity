@@ -32,16 +32,19 @@ static void usage(const char *program)
     fprintf(stderr, "\n");
     fprintf(stderr, "  Available Profiles:\n");
     fprintf(stderr, "      2015v1\n");
+    fprintf(stderr, "      2017\n");
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Output Format Options:\n");
     fprintf(stderr, "  -s, --openssh             Output OpenSSH public and private key\n");
+    fprintf(stderr, "  -g, --gpg                 Output OpenPGP public and private key\n");
     fprintf(stderr, "\n");
 }
 
 static struct option options[] = {
     // Output Formats.
     {"openssh", no_argument, NULL, 's'},
+    {"gpg", no_argument, NULL, 'g'},
 
     // Key Options.
     {"profile", required_argument, NULL, 'p'},
@@ -98,6 +101,7 @@ int main(int argc, char *argv[])
             case 'u':
                 username = optarg;
                 username_length = strlen(username);
+                sodium_mlock(username, username_length);
                 break;
 
             default:
@@ -157,34 +161,26 @@ int main(int argc, char *argv[])
         goto cleanup_passphrase_and_exit;
     }
 
-    if(strlen(passphrase) < 10)
+    if(strlen(passphrase) < 12)
     {
-        fprintf(stderr, "Error: Provided passphrase is shorter than 10 characters.\n");
+        fprintf(stderr, "Error: Provided passphrase is shorter than 12 characters.\n");
         success = false;
         goto cleanup_passphrase_and_exit;
     }
 
-    unsigned char public[crypto_sign_PUBLICKEYBYTES];
-    unsigned char secret[crypto_sign_SECRETKEYBYTES];
-
-    sodium_mlock(public, sizeof(public));
-    sodium_mlock(secret, sizeof(secret));
-    sodium_mlock(username, username_length);
-
-    // Avoid randomness here.
-    sodium_memzero(public, sizeof(public));
-    sodium_memzero(secret, sizeof(secret));
 
     printf("Generating key pair using the '%s' profile ...\n", profile_name);
     printf("This may take a little while ...\n");
 
-    if (generate_keypair(profile_name, username, username_length, passphrase, strlen(passphrase), secret, public))
+    struct profile_t * profile = generate_profile(profile_name, username, passphrase);
+
+    if (generate_openssh_keypair(profile))
     {
         printf("Successfully generated key pair ...\n");
 
         if (ssh_output)
         {
-            openssh_write(output_directory, username, username_length, secret, public);
+            openssh_write(output_directory, profile->username, strlen(profile->username), (unsigned char *) &(profile->openssh_secret), (unsigned char *) &(profile->openssh_public));
         }
     }
     else
@@ -193,9 +189,7 @@ int main(int argc, char *argv[])
         success = false;
     }
 
-    // Zeros out the buffers as well.
-    sodium_munlock(public, sizeof(public));
-    sodium_munlock(secret, sizeof(secret));
+    free_profile_t(profile);
     sodium_munlock(username, username_length);
 
 cleanup_passphrase_and_exit:

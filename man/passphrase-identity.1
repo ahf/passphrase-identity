@@ -22,6 +22,9 @@ You must be able to remember three things to (re)generate your key pair;
 .TP
 .IP
 \fB2015v1\fR - scrypt() + salsa20/8 + sha256 as KDF
+.TP
+.IP
+\fB2017\fR - scrypt() + salsa20/8 + sha256 as KDF
 .SS "Key Options:"
 .TP
 \fB\-u\fR, \fB\-\-user\fR
@@ -33,6 +36,9 @@ Specify which KDF profile to use
 .TP
 \fB\-s\fR, \fB\-\-openssh\fR
 Output OpenSSH public and private key \fBid_ed25519{,.pub}\fR
+.TP
+\fB\-g\fR, \fB\-\-gpg\fR
+Output OpenPGP public and private key \fBopenpgp.asc\fR
 .SS "Help Options:"
 .TP
 \fB\-\-help\fR
