@@ -48,7 +48,7 @@ void buffer_writer_set_offset(buffer_writer_t *buffer_writer, size_t offset)
 bool MUSTCHECK buffer_writer_write_value(buffer_writer_t *buffer_writer, const void *value, const size_t size)
 {
     if (buffer_writer == NULL || buffer_writer->buffer == NULL
-      || value == NULL || size == 0
+      || value == NULL
       || NULL == buffer_writer->buffer->data)
         return false;
 
@@ -59,6 +59,13 @@ bool MUSTCHECK buffer_writer_write_value(buffer_writer_t *buffer_writer, const v
     buffer_writer->write_offset += size;
 
     return true;
+}
+
+bool MUSTCHECK buffer_writer_write_buffer(buffer_writer_t *buffer_writer, const buffer_writer_t *srcbuf)
+{
+    if(NULL == srcbuf || NULL == srcbuf->buffer)
+        return false;
+    return buffer_writer_write_value(buffer_writer, srcbuf->buffer->data, srcbuf->write_offset);
 }
 
 bool MUSTCHECK buffer_writer_write_asciiz_with_linewrapping(buffer_writer_t *buffer_writer, const char *str, const size_t linewrapping)

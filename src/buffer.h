@@ -30,8 +30,8 @@ size_t buffer_size(const struct buffer *buffer);
 
 bool MUSTCHECK buffer_equal(const struct buffer *buffer, const struct buffer *other_buffer);
 
-bool MUSTCHECK buffer_hex_encode(struct buffer *buffer, struct buffer **result);
-bool MUSTCHECK buffer_hex_decode(struct buffer *buffer, struct buffer **result);
+bool MUSTCHECK buffer_hex_encode(const struct buffer *buffer, struct buffer **result);
+bool MUSTCHECK buffer_hex_decode(const struct buffer *buffer, struct buffer **result);
 
 bool MUSTCHECK buffer_base64_encode(struct buffer *buffer, struct buffer **result);
 bool MUSTCHECK buffer_base64_decode(struct buffer *buffer, struct buffer **result);

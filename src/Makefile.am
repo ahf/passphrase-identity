@@ -9,5 +9,7 @@ passphrase_identity_SOURCES = \
 	main.c \
 	memory.c \
 	openssh.c \
+	sha1.c \
+	openpgp.c \
 	profile.c \
 	readpassphrase.c

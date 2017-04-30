@@ -11,6 +11,10 @@ Files: src/readpassphrase.*
 Copyright: 2000-2002, 2007 Todd C. Miller <Todd.Miller@courtesan.com>
 License: TODD-DARPA
 
+Files: src/sha1.c src/sha.h src/sha-private.h
+Copyright: 2011 IETF Trust and the persons identified as authors of the code. All rights reserved.
+License: See src/sha.h for terms of use and redistribution.
+
 Files: m4/*
 Copyright: 1992-2009 Free Software Foundation
 License: GPL-2

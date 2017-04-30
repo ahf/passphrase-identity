@@ -1,7 +1,6 @@
 // Copyright (c) 2015 Alexander Færøy. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +12,7 @@
 
 #include "buffer.h"
 #include "openssh.h"
+#include "openpgp.h"
 #include "profile.h"
 #include "readpassphrase.h"
 #include "memory.h"
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     // Initialize base64 encoder and decoder.
     buffer_init();
 
-    while ((option = getopt_long(argc, argv, "shu:p:", options, NULL)) != -1)
+    while ((option = getopt_long(argc, argv, "gshu:p:", options, NULL)) != -1)
     {
         switch (option)
         {
@@ -168,25 +168,46 @@ int main(int argc, char *argv[])
         goto cleanup_passphrase_and_exit;
     }
 
-
-    printf("Generating key pair using the '%s' profile ...\n", profile_name);
+    printf("Generating key material using the '%s' profile ...\n", profile_name);
     printf("This may take a little while ...\n");
 
     struct profile_t * profile = generate_profile(profile_name, username, passphrase);
 
-    if (generate_openssh_keypair(profile))
+    if (ssh_output)
     {
-        printf("Successfully generated key pair ...\n");
-
-        if (ssh_output)
+        if (generate_openssh_keypair(profile))
         {
+            printf("Successfully generated SSH key pair ...\n");
+            // TODO check return val of this or make it a void(*)(..)
             openssh_write(output_directory, profile->username, strlen(profile->username), (unsigned char *) &(profile->openssh_secret), (unsigned char *) &(profile->openssh_public));
         }
+        else
+        {
+            fprintf(stderr, "Error: Unable to generate SSH key pair ...\n");
+            success = false;
+        }
     }
-    else
+
+    if (gpg_output)
     {
-        fprintf(stderr, "Error: Unable to generate key pair ...\n");
-        success = false;
+        if (generate_openpgp_keypair(profile))
+        {
+            printf("Successfully generated OpenPGP key pair ...\n");
+            if (openpgp_write(output_directory, profile))
+            {
+                printf("Successfully wrote OpenPGP key pair to disk.\n");
+            }
+            else
+            {
+                fprintf(stderr, "Failed to write OpenPGP key pair to disk...\n");
+                success = false;
+            }
+        }
+        else
+        {
+            fprintf(stderr, "Error: Unable to generate GPG key pair ...\n");
+            success = false;
+        }
     }
 
     free_profile_t(profile);

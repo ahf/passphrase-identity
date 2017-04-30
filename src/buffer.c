@@ -91,11 +91,11 @@ void buffer_free(struct buffer *buffer)
 
     if (buffer->data != NULL)
     {
-        memory_zero(buffer->data, buffer->size);
         secure_free(buffer->data);
         buffer->data = NULL;
     }
 
+    sodium_memzero(buffer, sizeof(struct buffer));
     free(buffer);
 }
 
@@ -129,7 +129,7 @@ bool MUSTCHECK buffer_equal(const struct buffer *buffer, const struct buffer *ot
     return memory_equal(buffer->data, other_buffer->data, buffer->size);
 }
 
-bool MUSTCHECK buffer_hex_encode(struct buffer *buffer, struct buffer **result)
+bool MUSTCHECK buffer_hex_encode(const struct buffer *buffer, struct buffer **result)
 {
     struct buffer *value = NULL;
 
@@ -147,7 +147,7 @@ bool MUSTCHECK buffer_hex_encode(struct buffer *buffer, struct buffer **result)
     return true;
 }
 
-bool MUSTCHECK buffer_hex_decode(struct buffer *buffer, struct buffer **result)
+bool MUSTCHECK buffer_hex_decode(const struct buffer *buffer, struct buffer **result)
 {
     struct buffer *value = NULL;
 

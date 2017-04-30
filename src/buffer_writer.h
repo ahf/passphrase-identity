@@ -28,6 +28,8 @@ void buffer_writer_set_offset(buffer_writer_t *buffer_writer, size_t offset);
 
 bool MUSTCHECK buffer_writer_write_value(buffer_writer_t *buffer_writer, const void *value, size_t size);
 
+bool MUSTCHECK buffer_writer_write_buffer(buffer_writer_t *buffer_writer, const buffer_writer_t *srcbuf);
+
 bool MUSTCHECK buffer_writer_write_asciiz(buffer_writer_t *buffer_writer, const char *str);
 bool MUSTCHECK buffer_writer_write_asciiz_with_linewrapping(buffer_writer_t *buffer_writer, const char *str, const size_t linewrapping);
 

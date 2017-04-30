@@ -6,6 +6,8 @@
 #define GUARD_PROFILE_H 1
 
 #include <stdbool.h>
+#include <stdlib.h>
+#include <sodium.h>
 
 #define DEFAULT_PROFILE "2017"
 
@@ -25,19 +27,24 @@ typedef struct profile_t
     unsigned char * material;
 
     // Inline these to keep them in the sodium_malloc() buffer:
-    char username[64];
     char passphrase[256];
+    char username[90];
 
     char openssh_secret[crypto_sign_ed25519_SECRETKEYBYTES];
-    char openssh_public[crypto_sign_ed25519_PUBLICKEYBYTES];
-} profile_t;
+    // Note that PGP stores the seed ("d") and computes the actual private key
+    // for every signature. Internally it just stores "d".
+    unsigned char openpgp_secret[crypto_sign_ed25519_SEEDBYTES];
 
+    char openssh_public[crypto_sign_ed25519_PUBLICKEYBYTES];
+    unsigned char openpgp_public[crypto_sign_ed25519_PUBLICKEYBYTES];
+} profile_t;
 
 bool is_valid_profile_name(const char *profile_name);
 
 struct profile_t * generate_profile(const char *profile_name, const char *username, const char *passphrase);
 
 bool generate_openssh_keypair(struct profile_t * profile);
+bool generate_openpgp_keypair(struct profile_t * profile);
 
 bool free_profile_t(struct profile_t * profile);
 
