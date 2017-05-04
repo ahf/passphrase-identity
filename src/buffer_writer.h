@@ -9,8 +9,6 @@
 
 #include "buffer.h"
 
-#define MUSTCHECK __attribute__((warn_unused_result))
-
 struct buffer_writer
 {
     size_t write_offset;

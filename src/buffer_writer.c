@@ -9,8 +9,6 @@
 #include "buffer_writer.h"
 #include "memory.h"
 
-#define MUSTCHECK __attribute__((warn_unused_result))
-
 buffer_writer_t* buffer_writer_new(struct buffer *buffer)
 {
     if (buffer == NULL)

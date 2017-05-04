@@ -2,6 +2,8 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
+#include <arpa/inet.h>
 
 #include "openpgp.h"
 #include "profile.h"
@@ -18,6 +20,8 @@
 #define PGP_public_file_name "/public.asc"
 #define PGP_secret_file_name "/secret.asc"
 
+typedef enum { PUBLIC_KEY, PRIVATE_KEY } PGP_key_type_t;
+
 typedef struct __attribute__((__packed__)) pkt_header
 {
     uint8_t length_type : 2; // codes for length field size; 0 is for single-octet length
@@ -25,7 +29,6 @@ typedef struct __attribute__((__packed__)) pkt_header
     uint8_t new_format  : 1;
     uint8_t always_one  : 1;
 } pkt_header;
-_Static_assert(sizeof(pkt_header) == sizeof(uint8_t), "openpgp: pkt_header not uint8_t");
 
 static uint16_t mpi_len(unsigned char msb)
 {
@@ -41,6 +44,132 @@ static uint16_t mpi_len(unsigned char msb)
         bits_not_set++;
     }
     return 256 - bits_not_set;
+}
+
+static bool crc24_bytes(unsigned char *octets, size_t len, uint8_t output[3])
+{
+    // Adapted from 6.1 An Implementation of the CRC-24 in "C"
+    // https://tools.ietf.org/html/rfc4880#section-6.1
+
+    if(NULL == octets || NULL == output || 0 == len)
+        return false;
+
+    int32_t crc = 0xB704CEL;
+
+    while (len--)
+    {
+        crc ^= (*octets++) << 16;
+        for (int i = 0; i < 8; i++)
+        {
+            crc <<= 1;
+            if (crc & 0x1000000)
+                crc ^= 0x1864CFBL;
+        }
+    }
+
+    crc = htonl(crc & 0xffffff);
+    output[0] = (crc >>= 8) & 0xff;
+    output[1] = (crc >>= 8) & 0xff;
+    output[2] = (crc >>= 8) & 0xff;
+
+    return true;
+}
+
+static struct buffer * openpgp_encode_armor(const struct buffer *input, PGP_key_type_t key_type)
+{
+    // 6. Radix-64 Conversions:
+    // https://tools.ietf.org/html/rfc4880#section-6
+
+    // "OpenPGP's Radix-64 encoding is composed of two parts: a base64
+    // encoding of the binary data and a checksum.  The base64 encoding is
+    // identical to the MIME base64 content-transfer-encoding [RFC2045]."
+
+    bool ok = true;
+
+    struct buffer * b64 = NULL;
+    struct buffer * crc_raw = NULL;
+    struct buffer * crc_b64 = NULL;
+    struct buffer * output_buf = NULL;
+    buffer_writer_t * output = NULL;
+
+    if(NULL == input)
+        goto error;
+
+    // When OpenPGP encodes data into ASCII Armor, it puts specific headers
+    // around the Radix-64 encoded data, so OpenPGP can reconstruct the data
+    // later.  An OpenPGP implementation MAY use ASCII armor to protect raw
+    // binary data.  OpenPGP informs the user what kind of data is encoded
+    // in the ASCII armor through the use of the headers.
+
+    ok &= buffer_base64_encode(input, &b64);
+
+    output_buf = buffer_new(buffer_size(b64) + 400);
+    output = buffer_writer_new(output_buf);
+    if(NULL == output) goto error;
+
+    crc_raw = buffer_new(3);
+    if(NULL == crc_raw) goto error;
+    ok &= crc24_bytes(input->data, input->size, crc_raw->data);
+    ok &= buffer_base64_encode(crc_raw, &crc_b64);
+
+    if(!ok) goto error;
+
+    // - An Armor Header Line, appropriate for the type of data
+
+    ok &= buffer_writer_write_asciiz(output, "-----BEGIN PGP ");
+    if(PUBLIC_KEY == key_type)
+        ok &= buffer_writer_write_asciiz(output, "PUBLIC");
+    if(PRIVATE_KEY == key_type)
+        ok &= buffer_writer_write_asciiz(output, "PRIVATE");
+    ok &= buffer_writer_write_asciiz(output, " KEY BLOCK-----\n");
+
+    // Blatantly lie about our user-agent:
+    ok &= buffer_writer_write_asciiz(output, "Version: GnuPG v2\n\n");
+
+    // Note that line lengths of the "Radix 64" (aka Base64) flavour specified is 76,
+    // but we use 64 to be as similar to GnuPG as possible.
+    // "6.3. Encoding Binary in Radix-64" (bottom paragraph):
+    // https://tools.ietf.org/html/rfc4880#section-6.3
+
+    ok &= buffer_writer_write_asciiz_with_linewrapping(output, (const char *) b64->data, 64);
+
+    if(ok && '\n' != output->buffer->data[output->write_offset-1])
+    {
+        ok &= buffer_writer_write_asciiz(output, "\n");
+    }
+
+    ok &= buffer_writer_write_value(output, crc_b64->data, crc_b64->size);
+    ok &= buffer_writer_write_asciiz(output, "\n");
+
+    ok &= buffer_writer_write_asciiz(output, "-----END PGP ");
+    if(PUBLIC_KEY == key_type)
+        ok &= buffer_writer_write_asciiz(output, "PUBLIC");
+    if(PRIVATE_KEY == key_type)
+        ok &= buffer_writer_write_asciiz(output, "PRIVATE");
+    ok &= buffer_writer_write_asciiz(output, " KEY BLOCK-----\n");
+
+    goto cleanup;
+
+    error:
+    ok = false;
+
+    cleanup:
+
+    if(ok)
+    {
+        output_buf->size = output->write_offset;
+    }else
+    {
+        buffer_free(output_buf);
+        output_buf = NULL;
+    }
+
+    buffer_free(b64);
+    buffer_free(crc_raw);
+    buffer_free(crc_b64);
+    buffer_writer_free(output);
+
+    return output_buf;
 }
 
 static bool openpgp_keyid_from_profile(const struct profile_t * profile, char keyid[8])
@@ -100,7 +229,6 @@ static bool openpgp_keyid_from_profile(const struct profile_t * profile, char ke
     ok &= shaSuccess == SHA1Result(&sha1_ctx, pk_hash);
     if(!ok) goto cleanup;
 
-    _Static_assert(sizeof(pk_hash) > 8,"hashsz doesn't fit into keyid");
     memcpy(keyid, pk_hash+sizeof(pk_hash)-8, 8);
     memcpy(keyid, pk_hash+12, 8);
 
@@ -114,7 +242,7 @@ static bool openpgp_keyid_from_profile(const struct profile_t * profile, char ke
     return ok;
 }
 
-static struct buffer * openpgp_transferable_public_or_secret_key_packet(const profile_t *profile, bool generate_publicx)
+static struct buffer * openpgp_transferable_public_or_secret_key_packet(const profile_t *profile, PGP_key_type_t key_type)
 {
     // 5.5.1.1.  Public-Key Packet (Tag 6)
     // 5.5.1.3.  Secret-Key Packet (Tag 5)
@@ -131,7 +259,7 @@ static struct buffer * openpgp_transferable_public_or_secret_key_packet(const pr
       + sizeof(uint16_t) // MPI length field for EdDSA "A"
       + sizeof(uint8_t)  // point compression type
       + sizeof profile->openpgp_public
-      + (generate_publicx ? 0 : (
+      + (PUBLIC_KEY == key_type ? 0 : (
             sizeof(uint8_t) // "string-to-key" usage AKA "DO YOU ENCRYPT?!"
           + sizeof(uint16_t) // MPI length field for EdDSA "ENC(X,Y)"
           + sizeof(profile->openpgp_secret) // the seed "d" for EdDSA secret key
@@ -158,7 +286,7 @@ static struct buffer * openpgp_transferable_public_or_secret_key_packet(const pr
       + sizeof(uint16_t) \
       )
 
-    const uint16_t msg_length = generate_publicx ? pgp_public_packet_msg_length : pgp_private_packet_msg_length;
+    const uint16_t msg_length = (PUBLIC_KEY == key_type) ? pgp_public_packet_msg_length : pgp_private_packet_msg_length;
 
     key_packet = buffer_new(sizeof(struct pkt_header)+sizeof(uint8_t)+msg_length);
     pkp_w = buffer_writer_new(key_packet);
@@ -171,12 +299,14 @@ static struct buffer * openpgp_transferable_public_or_secret_key_packet(const pr
         .length_type = PGP_single_octet_length
     };
 
-    if(generate_publicx)
+    if(PUBLIC_KEY == key_type)
         // 5.5.1.1.  Public-Key Packet (Tag 6)
         packet_header.packet_tag = 6;
-    if(!generate_publicx)
+
+    if(PRIVATE_KEY == key_type)
         // 5.5.1.3.  Secret-Key Packet (Tag 5)
         packet_header.packet_tag = 5;
+
     ok &= buffer_writer_write_value(pkp_w, &packet_header, sizeof(packet_header));
 
     // length of this packet:
@@ -213,7 +343,7 @@ static struct buffer * openpgp_transferable_public_or_secret_key_packet(const pr
     // public key element "Q"
     ok &= buffer_writer_write_value(pkp_w, profile->openpgp_public, sizeof profile->openpgp_public);
 
-    if(!generate_publicx)
+    if(PRIVATE_KEY == key_type)
     {
         // Secret-Key Packet Formats https://tools.ietf.org/html/rfc4880#section-5.5.3
 
@@ -281,7 +411,7 @@ static struct buffer * openpgp_transferable_public_or_secret_key_packet(const pr
     return key_packet;
 }
 
-static struct buffer * openpgp_fill_key(const profile_t * profile, bool generate_public)
+static struct buffer * openpgp_fill_key(const profile_t * profile, PGP_key_type_t key_type)
 {
     if(NULL == profile
     || NULL == profile->username)
@@ -319,7 +449,7 @@ static struct buffer * openpgp_fill_key(const profile_t * profile, bool generate
 
 ////// 5.5.1.1.  Public-Key Packet (Tag 6)
 
-    public_key_packet = openpgp_transferable_public_or_secret_key_packet(profile, generate_public);
+    public_key_packet = openpgp_transferable_public_or_secret_key_packet(profile, key_type);
     if(NULL == public_key_packet)
     {
         ok = false;
@@ -549,7 +679,7 @@ static struct buffer * openpgp_fill_key(const profile_t * profile, bool generate
     {
         char r[32];
         char s[32];
-    } ed25519_sig; _Static_assert(sizeof(ed25519_sig) == 64, "ed25519 sig wrong size");
+    } ed25519_sig;
 
     // TODO consider using crypto_sign_ed25519_sk_to_seed() instead
     unsigned char *tmp_secret = sodium_malloc(64);
@@ -623,14 +753,6 @@ static struct buffer * openpgp_fill_key(const profile_t * profile, bool generate
     return NULL;
 }
 
-static struct buffer * openpgp_fill_public_key(const profile_t *profile)
-{
-    // generate_public = true
-    return openpgp_fill_key(profile, true);
-}
-
-static struct buffer * openpgp_fill_private_key(const profile_t *profile)
-{
     // Transferable Secret Keys:
     // https://tools.ietf.org/html/rfc4880#section-11.2
     // The format of a transferable
@@ -652,47 +774,51 @@ static struct buffer * openpgp_fill_private_key(const profile_t *profile)
     //   A Secret-Subkey packet (tag 7) is the subkey analog of the Secret
     //   Key packet and has exactly the same format.
 
-    // generate_public = false
-    return openpgp_fill_key(profile, false);
-}
-
 bool openpgp_write(const char *output_directory, const struct profile_t *profile)
 {
     if(NULL == profile || NULL == output_directory)
         return false;
+
+    // since we're going to display error messages, reset errno to avoid
+    // describing previous errors:
+    errno = 0;
 
     FILE * fh = NULL;
     bool ok = true;
 
     struct buffer * public_data = NULL;
     struct buffer * secret_data = NULL;
+    struct buffer * ascii_public_data = NULL;
+    struct buffer * ascii_secret_data = NULL;
     char * public_path = NULL;
     char * secret_path = NULL;
 
-    public_data = openpgp_fill_public_key(profile);
-    if(NULL == public_data) goto error;
+    public_data = openpgp_fill_key(profile, PUBLIC_KEY);
+    ascii_public_data = openpgp_encode_armor(public_data, PUBLIC_KEY);
+    if(NULL == ascii_public_data) goto error;
 
     public_path = malloc(strlen(output_directory) + strlen(PGP_public_file_name) + 1);
     if(NULL == public_path) goto error;
     strcpy(public_path, output_directory);
     strcat(public_path, PGP_public_file_name);
 
-    fh = fopen(public_path, "wc");
+    fh = fopen(public_path, "wcx");
     if(NULL == fh) goto error;
-    if(1 != fwrite(public_data->data, public_data->size, 1, fh)) goto error;
+    if(1 != fwrite(ascii_public_data->data, ascii_public_data->size, 1, fh)) goto error;
     if(0 != fclose(fh)) goto error;
 
-    secret_data = openpgp_fill_private_key(profile);
-    if(NULL == secret_data) goto error;
+    secret_data = openpgp_fill_key(profile, PRIVATE_KEY);
+    ascii_secret_data = openpgp_encode_armor(secret_data, PRIVATE_KEY);
+    if(NULL == ascii_secret_data) goto error;
 
     secret_path = malloc(strlen(output_directory) + strlen(PGP_secret_file_name) + 1);
     if(NULL == secret_path) goto error;
     strcpy(secret_path, output_directory);
     strcat(secret_path, PGP_secret_file_name);
 
-    fh = fopen(secret_path, "wc");
+    fh = fopen(secret_path, "wcx");
     if(NULL == fh) goto error;
-    if(1 != fwrite(secret_data->data, secret_data->size, 1, fh)) goto error;
+    if(1 != fwrite(ascii_secret_data->data, ascii_secret_data->size, 1, fh)) goto error;
     if(0 != fclose(fh)) goto error;
 
     goto cleanup;
@@ -700,9 +826,14 @@ bool openpgp_write(const char *output_directory, const struct profile_t *profile
     error:
     ok = false;
 
+    if(errno)
+        perror("OpenPGP error");
+
     cleanup:
     buffer_free(public_data);
     buffer_free(secret_data);
+    buffer_free(ascii_public_data);
+    buffer_free(ascii_secret_data);
     free(public_path);
     free(secret_path);
 

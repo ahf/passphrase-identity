@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 
+// this attribute is supported by clang and gcc:
 #define MUSTCHECK __attribute__((warn_unused_result))
 
 struct buffer
@@ -25,7 +26,7 @@ struct buffer* MUSTCHECK buffer_new_random(size_t size);
 
 void buffer_free(struct buffer *buffer);
 
-const char *buffer_string(struct buffer *buffer);
+char *buffer_string(const struct buffer *buffer);
 size_t buffer_size(const struct buffer *buffer);
 
 bool MUSTCHECK buffer_equal(const struct buffer *buffer, const struct buffer *other_buffer);
@@ -33,7 +34,10 @@ bool MUSTCHECK buffer_equal(const struct buffer *buffer, const struct buffer *ot
 bool MUSTCHECK buffer_hex_encode(const struct buffer *buffer, struct buffer **result);
 bool MUSTCHECK buffer_hex_decode(const struct buffer *buffer, struct buffer **result);
 
-bool MUSTCHECK buffer_base64_encode(struct buffer *buffer, struct buffer **result);
-bool MUSTCHECK buffer_base64_decode(struct buffer *buffer, struct buffer **result);
+bool MUSTCHECK buffer_base64_encoded_size(const struct buffer *buffer, size_t *projected_size);
+bool MUSTCHECK buffer_base64_encode(const struct buffer *buffer, struct buffer **result);
+
+bool MUSTCHECK buffer_base64_decoded_size(const struct buffer *buffer, size_t *projected_size);
+bool MUSTCHECK buffer_base64_decode(const struct buffer *buffer, struct buffer **result);
 
 #endif

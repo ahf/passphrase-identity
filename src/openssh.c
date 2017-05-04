@@ -32,7 +32,7 @@ static bool openssh_write_public(const char *output_directory, const char *usern
 
     printf("Saving OpenSSH public key to %s ...\n", public_file_path);
 
-    fd = open(public_file_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    fd = open(public_file_path, O_WRONLY | O_CREAT | O_EXCL, 0600);
     free(public_file_path);
 
     if (fd == -1)
@@ -109,7 +109,7 @@ static bool openssh_write_secret(const char *output_directory, const char *usern
 
     printf("Saving OpenSSH secret key to %s ...\n", secret_file_path);
 
-    fd = open(secret_file_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    fd = open(secret_file_path, O_WRONLY | O_CREAT | O_EXCL, 0600);
     free(secret_file_path);
 
     if (fd == -1)

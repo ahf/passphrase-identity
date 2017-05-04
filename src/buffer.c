@@ -24,7 +24,7 @@ static unsigned char base64_decoding_table[256];
 
 static int base64_mod_table[] = { 0, 2, 1 };
 
-void buffer_init(void)
+void __attribute__((constructor)) buffer_init(void)
 {
     for (int i = 0; i < 64; ++i)
     {
@@ -77,6 +77,9 @@ struct buffer* MUSTCHECK buffer_new_from_raw_buffer(unsigned char *data, size_t 
 {
     struct buffer *buffer = NULL;
 
+    if(NULL == data)
+        return NULL;
+
     buffer = buffer_new(size);
     if (NULL != buffer)
         memcpy(buffer->data, data, size);
@@ -91,15 +94,17 @@ void buffer_free(struct buffer *buffer)
 
     if (buffer->data != NULL)
     {
+        // shred the data:
         secure_free(buffer->data);
         buffer->data = NULL;
     }
 
+    // get rid of ->data pointer + ->size:
     sodium_memzero(buffer, sizeof(struct buffer));
     free(buffer);
 }
 
-const char *buffer_string(struct buffer *buffer)
+char *buffer_string(const struct buffer *buffer)
 {
     if (buffer == NULL)
         return NULL;
@@ -164,14 +169,32 @@ bool MUSTCHECK buffer_hex_decode(const struct buffer *buffer, struct buffer **re
     return true;
 }
 
-bool MUSTCHECK buffer_base64_encode(struct buffer *buffer, struct buffer **result)
+bool MUSTCHECK buffer_base64_encoded_size(const struct buffer *buffer, size_t *projected_size)
+{
+    if(NULL == buffer || NULL == projected_size)
+        return false;
+
+    // check for overflow, rounding down:
+    if(buffer->size > ((SIZE_MAX-3) / 4) * 3)
+        return false;
+
+    // see implementation in buffer_base64_encode below
+    *projected_size = 4 * ((buffer->size + 2)/3);
+    return true;
+}
+
+bool MUSTCHECK buffer_base64_encode(const struct buffer *buffer, struct buffer **result)
 {
     struct buffer *value = NULL;
 
     if (buffer == NULL || result == NULL)
         return false;
 
-    value = buffer_new(4 * ((buffer->size + 2) / 3));
+    size_t encoded_size = 0;
+    if(!buffer_base64_encoded_size(buffer, &encoded_size))
+        return false;
+
+    value = buffer_new(encoded_size);
     if (NULL == value)
         return false;
 
@@ -196,18 +219,36 @@ bool MUSTCHECK buffer_base64_encode(struct buffer *buffer, struct buffer **resul
     return true;
 }
 
-bool MUSTCHECK buffer_base64_decode(struct buffer *buffer, struct buffer **result)
+bool MUSTCHECK buffer_base64_decoded_size(const struct buffer *buffer, size_t *projected_size)
+{
+    if(NULL == buffer || NULL == projected_size)
+        return false;
+
+    if (buffer->size % 4 != 0) return false;
+//    {
+//        if(buffer->size % 4 == 1 && '\0' != *(buffer->data + buffer->size -1))
+//          return false;
+//    }
+
+    *projected_size = (buffer->size / 4) * 3;
+
+    return true;
+}
+
+bool MUSTCHECK buffer_base64_decode(const struct buffer *buffer, struct buffer **result)
 {
     struct buffer *value = NULL;
     size_t value_size = 0;
 
-    if (buffer == NULL || result == NULL)
+    if (NULL == result)
         return false;
 
-    if (buffer->size % 4 != 0)
-        return false;
+    // make sure decoding table is initiated:
+    if('3' != base64_decoding_table[base64_encoding_table['3']])
+        buffer_init();
 
-    value_size = buffer->size / 4 * 3;
+    if(!buffer_base64_decoded_size(buffer, &value_size))
+        return false;
 
     if (buffer->data[buffer->size - 1] == '=')
         --value_size;
