@@ -1,15 +1,14 @@
 # Passphrase-identity
 
-Regenerable ed25519 keys for OpenSSH.
+Regenerable ed25519 keys for OpenSSH and OpenPGP.
 
-Passphrase-identity allows you to deterministically generate an ed25519 key pair for OpenSSH
-from a set of parameters. This allows you to (re)generate your key pair on a
-computer which, for example, lacks persistent storage.
+Passphrase-identity allows you to deterministically generate ed25519 key pairs (signing keys) for OpenSSH and OpenPGP from a set of parameters.
+This allows you to (re)generate your key pair on a computer which, for example, lacks persistent storage - it derives an "identity" from a passphrase.
 
 You must be able to remember three things to (re)generate your key pair;
 
 1. A user defined "username", which can be any string.
-2. A Passphrase-identity defined "profile" name. There's currently only one profile available: `2015v1`, which uses `scrypt()` + `salsa20/8` + `sha256` as KDF.
+2. A Passphrase-identity defined "profile" name. There's currently only two profiles available: `2015v1`, and `2017`, both of which use `scrypt()` + `salsa20/8` + `sha256` as KDF.
 3. Your personally selected passphrase.
 
 ## Usage
@@ -17,17 +16,24 @@ You must be able to remember three things to (re)generate your key pair;
     Usage: ./passphrase-identity [ options ] [ output directory ]
 
     Help Options:
-      -h, --help                Show help options
+      -h, --help                Display this message (default behavior)
 
     Key Options:
-      -u, --user <username>     Specify which username to use
+      -u, --user <username>     Specify which username to use [as salt]
       -p, --profile <profile>   Specify which profile to use
 
       Available Profiles:
+
           2015v1
+          2017
 
     Output Format Options:
+
       -s, --openssh             Output OpenSSH public and private key
+                                The keys are written to id_ed25519{,.pub}
+
+      -g, --gpg                 Output OpenPGP public and private key
+                                The keys are written to {public,private}.asc
 
 ## Example Usage
 
@@ -58,8 +64,8 @@ You must be able to remember three things to (re)generate your key pair;
 
 2. Wipe the key pair.
 
-        $ rm -rf id_ed25519
-        $ rm -rf id_ed25519.pub
+        $ shred -u id_ed25519
+        $ shred -u id_ed25519.pub
 
 3. Create the key again using the same parameters and passphrase.
 
@@ -96,12 +102,11 @@ make
 ## Todo
 
 1. Code clean-up. This is a prototype written during two evenings of a weekend.
-2. GnuPG format support.
-3. Consider the new Tor ed25519 ID keys?
-4. Add proper tests. Use Travis CI to build on both OS X and Linux.
-5. Add fancy graphics after key generation, like the OpenSSH client, such that
+2. Consider the new Tor ed25519 ID keys?
+3. Add proper tests. Use Travis CI to build on both OS X and Linux.
+4. Add fancy graphics after key generation, like the OpenSSH client, such that
    the user can quickly identify if something is wrong. 
-6. Add cracklib support and remember to make it possible to disable it as well.
+5. Add cracklib support and remember to make it possible to disable it as well.
 
 ## License
 

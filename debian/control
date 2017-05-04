@@ -14,7 +14,9 @@ Build-Depends: libtool (>= 2.4.6),
 Package: passphrase-identity
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Regenerable ed25519 keys for OpenSSH
- Passphrase-identity allows you to deterministically generate an ed25519 key pair for OpenSSH
- from a set of parameters. This allows you to (re)generate your key pair on a
- computer which, for example, lacks persistent storage.
+Description: Regenerable ed25519 keys for OpenSSH and OpenPGP
+ Passphrase-identity allows you to deterministically generate
+ ed25519 key pairs (signing keys) for OpenSSH and OpenPGP from a passphrase.
+ This allows you to (re)generate your key pair on a computer which, for example,
+ lacks persistent storage.
+ The passphrase is salted with a username and a pre-set scrypt profile.

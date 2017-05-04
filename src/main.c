@@ -23,21 +23,26 @@ static void usage(const char *program)
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Help Options:\n");
-    fprintf(stderr, "  -h, --help                Show help options\n");
+    fprintf(stderr, "  -h, --help                Display this message (default behavior)\n");
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Key Options:\n");
-    fprintf(stderr, "  -u, --user <username>     Specify which username to use\n");
+    fprintf(stderr, "  -u, --user <username>     Specify which username to use [as salt]\n");
     fprintf(stderr, "  -p, --profile <profile>   Specify which profile to use\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  Available Profiles:\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "      2015v1\n");
     fprintf(stderr, "      2017\n");
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Output Format Options:\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "  -s, --openssh             Output OpenSSH public and private key\n");
+    fprintf(stderr, "                            The keys are written to id_ed25519{,.pub}\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "  -g, --gpg                 Output OpenPGP public and private key\n");
+    fprintf(stderr, "                            The keys are written to {public,private}.asc\n");
     fprintf(stderr, "\n");
 }
 
