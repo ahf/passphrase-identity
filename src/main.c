@@ -1,7 +1,6 @@
 // Copyright (c) 2015 Alexander Færøy. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,8 +12,10 @@
 
 #include "buffer.h"
 #include "openssh.h"
+#include "openpgp.h"
 #include "profile.h"
 #include "readpassphrase.h"
+#include "memory.h"
 
 static void usage(const char *program)
 {
@@ -22,32 +23,43 @@ static void usage(const char *program)
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Help Options:\n");
-    fprintf(stderr, "  -h, --help                Show help options\n");
+    fprintf(stderr, "  -h, --help                Display this message (default behavior)\n");
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Key Options:\n");
-    fprintf(stderr, "  -u, --user <username>     Specify which username to use\n");
+    fprintf(stderr, "  -u, --user <username>     Specify which username to use [as salt]\n");
     fprintf(stderr, "  -p, --profile <profile>   Specify which profile to use\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  Available Profiles:\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "      2015v1\n");
+    fprintf(stderr, "      2017\n");
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Output Format Options:\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "  -s, --openssh             Output OpenSSH public and private key\n");
+    fprintf(stderr, "                            The keys are written to id_ed25519{,.pub}\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  -g, --gpg                 Output OpenPGP public and private key\n");
+    fprintf(stderr, "                            The keys are written to {public,private}.asc\n");
     fprintf(stderr, "\n");
 }
 
 static struct option options[] = {
     // Output Formats.
     {"openssh", no_argument, NULL, 's'},
+    {"gpg", no_argument, NULL, 'g'},
 
     // Key Options.
     {"profile", required_argument, NULL, 'p'},
     {"user", required_argument, NULL, 'u'},
 
     // Help.
-    {"help", no_argument, NULL, 'h'}
+    {"help", no_argument, NULL, 'h'},
+
+    // End of option array:
+    {NULL, 0, NULL, 0}
 };
 
 int main(int argc, char *argv[])
@@ -70,11 +82,12 @@ int main(int argc, char *argv[])
 
     // Passphrase.
     char passphrase[1024];
+    char passphrase_verify[sizeof passphrase];
 
     // Initialize base64 encoder and decoder.
     buffer_init();
 
-    while ((option = getopt_long(argc, argv, "shu:p:", options, NULL)) != -1)
+    while ((option = getopt_long(argc, argv, "gshu:p:", options, NULL)) != -1)
     {
         switch (option)
         {
@@ -93,6 +106,7 @@ int main(int argc, char *argv[])
             case 'u':
                 username = optarg;
                 username_length = strlen(username);
+                sodium_mlock(username, username_length);
                 break;
 
             default:
@@ -133,45 +147,80 @@ int main(int argc, char *argv[])
     }
 
     sodium_mlock(passphrase, sizeof(passphrase));
+    sodium_mlock(passphrase_verify, sizeof(passphrase_verify));
+    memory_zero(passphrase, sizeof passphrase);
+    memory_zero(passphrase_verify, sizeof passphrase);
 
-    if (readpassphrase("Passphrase: ", passphrase, sizeof(passphrase), RPP_ECHO_OFF) != NULL)
+    if(NULL == readpassphrase("Enter passphrase: ", passphrase, sizeof(passphrase), RPP_ECHO_OFF)
+    || NULL == readpassphrase("Confirm passphrase: ", passphrase_verify, sizeof(passphrase), RPP_ECHO_OFF))
     {
-        unsigned char public[crypto_sign_PUBLICKEYBYTES];
-        unsigned char secret[crypto_sign_SECRETKEYBYTES];
+        fprintf(stderr, "Error: Program failed to read passphrases.\n");
+        success = false;
+        goto cleanup_passphrase_and_exit;
+    }
 
-        sodium_mlock(public, sizeof(public));
-        sodium_mlock(secret, sizeof(secret));
-        sodium_mlock(username, username_length);
+    if(0 != strncmp(passphrase, passphrase_verify, sizeof(passphrase_verify)))
+    {
+        fprintf(stderr, "Error: Passphrases do not match.\n");
+        success = false;
+        goto cleanup_passphrase_and_exit;
+    }
 
-        // Avoid randomness here.
-        sodium_memzero(public, sizeof(public));
-        sodium_memzero(secret, sizeof(secret));
+    if(strlen(passphrase) < 12)
+    {
+        fprintf(stderr, "Error: Provided passphrase is shorter than 12 characters.\n");
+        success = false;
+        goto cleanup_passphrase_and_exit;
+    }
 
-        printf("Generating key pair using the '%s' profile ...\n", profile_name);
-        printf("This may take a little while ...\n");
+    printf("Generating key material using the '%s' profile ...\n", profile_name);
+    printf("This may take a little while ...\n");
 
-        if (generate_keypair(profile_name, username, username_length, passphrase, strlen(passphrase), secret, public))
+    struct profile_t * profile = generate_profile(profile_name, username, passphrase);
+
+    if (ssh_output)
+    {
+        if (generate_openssh_keypair(profile))
         {
-            printf("Succesfully generated key pair ...\n");
+            printf("Successfully generated SSH key pair ...\n");
+            // TODO check return val of this or make it a void(*)(..)
+            openssh_write(output_directory, profile->username, strlen(profile->username), (unsigned char *) &(profile->openssh_secret), (unsigned char *) &(profile->openssh_public));
+        }
+        else
+        {
+            fprintf(stderr, "Error: Unable to generate SSH key pair ...\n");
+            success = false;
+        }
+    }
 
-            if (ssh_output)
+    if (gpg_output)
+    {
+        if (generate_openpgp_keypair(profile))
+        {
+            printf("Successfully generated OpenPGP key pair ...\n");
+            if (openpgp_write(output_directory, profile))
             {
-                openssh_write(output_directory, username, username_length, secret, public);
+                printf("Successfully wrote OpenPGP key pair to disk.\n");
+            }
+            else
+            {
+                fprintf(stderr, "Failed to write OpenPGP key pair to disk...\n");
+                success = false;
             }
         }
         else
         {
-            fprintf(stderr, "Error: Unable to generate key pair ...\n");
+            fprintf(stderr, "Error: Unable to generate GPG key pair ...\n");
             success = false;
         }
-
-        // Zeros out the buffers as well.
-        sodium_munlock(public, sizeof(public));
-        sodium_munlock(secret, sizeof(secret));
-        sodium_munlock(username, username_length);
     }
 
+    free_profile_t(profile);
+    sodium_munlock(username, username_length);
+
+cleanup_passphrase_and_exit:
     sodium_munlock(passphrase, sizeof(passphrase));
+    sodium_munlock(passphrase_verify, sizeof(passphrase_verify));
 
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

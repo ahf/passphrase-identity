@@ -133,8 +133,15 @@ restart:
 
 	/* No I/O if we are already backgrounded. */
 	if (signo[SIGTTOU] != 1 && signo[SIGTTIN] != 1) {
+# if __GNUC__
+  # pragma GCC diagnostic push
+  # pragma GCC diagnostic ignored "-Wunused-result"
+# endif
 		if (!(flags & RPP_STDIN))
 			(void)write(output, prompt, strlen(prompt));
+# if __GNUC__
+  # pragma GCC diagnostic pop
+# endif
 		end = buf + bufsiz - 1;
 		p = buf;
 		while ((nr = read(input, &ch, 1)) == 1 && ch != '\n' && ch != '\r') {
@@ -152,8 +159,15 @@ restart:
 		}
 		*p = '\0';
 		save_errno = errno;
+# if __GNUC__
+  # pragma GCC diagnostic push
+  # pragma GCC diagnostic ignored "-Wunused-result"
+# endif
 		if (!(term.c_lflag & ECHO))
 			(void)write(output, "\n", 1);
+# if __GNUC__
+  # pragma GCC diagnostic pop
+# endif
 	}
 
 	/* Restore old terminal settings and signals. */
