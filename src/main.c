@@ -64,7 +64,7 @@ static struct option options[] = {
 
 int main(int argc, char *argv[])
 {
-    char option;
+    int option;
     bool success = true;
 
     // Output formats.
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     size_t username_length = 0;
 
     // Output directory.
-    char *output_directory = NULL;
+    char *output_directory = ".";
 
     // Passphrase.
     char passphrase[1024];
