@@ -1,8 +1,8 @@
-# Passphrase-identity
+# Passphrase Identity
 
 Regenerable ed25519 keys for OpenSSH and OpenPGP.
 
-Passphrase-identity allows you to deterministically generate ed25519 key pairs (signing keys) for OpenSSH and OpenPGP from a set of parameters.
+Passphrase Identity allows you to deterministically generate ed25519 key pairs (signing keys) for OpenSSH and OpenPGP from a set of parameters.
 This allows you to (re)generate your key pair on a computer which, for example, lacks persistent storage - it derives an "identity" from a passphrase.
 
 You must be able to remember three things to (re)generate your key pair;
